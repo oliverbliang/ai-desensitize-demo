@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 脱敏助手</title>
+<meta name="description" content="面向律所、药企、企业合同等高敏感场景的 AI 脱敏与还原流程演示">
+<style>
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --panel-2:#f7f8fa; --border:#e2e5ea; --border-2:#d3d8e0; --text:#18202e; --muted:#687083;
+  --accent:#4253d6; --accent-2:#6a4fd6; --accent-weak:#eceffd; --ok:#23854a; --ok-weak:#e4f4ea; --bad:#c62f2f; --bad-weak:#fcebeb;
+  --warn:#b86e00; --warn-weak:#fdf3e1; --calc:#1a6dc0; --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);
+  --desk:#e7e9ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1116; --panel:#181b22; --panel-2:#1f232b; --border:#2b303a; --border-2:#3a404c; --text:#e6e8ee; --muted:#959cab;
+    --accent:#8291ff; --accent-2:#a48bff; --accent-weak:#232a48; --ok:#5cc47b; --ok-weak:#18301f; --bad:#ff7d7d; --bad-weak:#3a1f22;
+    --warn:#f0b04a; --warn-weak:#3a2e17; --calc:#62adff; --shadow:none; --desk:#252932;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1116; --panel:#181b22; --panel-2:#1f232b; --border:#2b303a; --border-2:#3a404c; --text:#e6e8ee; --muted:#959cab;
+  --accent:#8291ff; --accent-2:#a48bff; --accent-weak:#232a48; --ok:#5cc47b; --ok-weak:#18301f; --bad:#ff7d7d; --bad-weak:#3a1f22;
+  --warn:#f0b04a; --warn-weak:#3a2e17; --calc:#62adff; --shadow:none; --desk:#252932;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+
+/* ---------- header ---------- */
+header{background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+.head{max-width:1280px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:#fff;font-weight:800;font-size:16px}
+.brand b{display:block;font-size:16px;line-height:1.2}
+.brand small{color:var(--muted);font-size:12px}
+.badge-local{margin-left:auto;font-size:12px;color:var(--ok);background:var(--ok-weak);padding:4px 10px;border-radius:99px;display:flex;align-items:center;gap:6px}
+.badge-local i{width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block}
+.stepper{max-width:1280px;margin:0 auto;padding:0 24px 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.step{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel-2);cursor:pointer;color:var(--muted);text-align:left;position:relative}
+.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1.5px solid currentColor;font-size:12px;font-weight:700;flex:none}
+.step b{display:block;font-size:13px;line-height:1.3}
+.step small{font-size:11.5px}
+.step.done{color:var(--ok)} .step.done .n{background:var(--ok-weak);border-color:transparent}
+.step.on{color:var(--accent);border-color:var(--accent);background:var(--accent-weak)}
+.step.on .n{background:var(--accent);color:#fff;border-color:transparent}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1280px;margin:0 auto;padding:20px 24px 56px}
+section.page{display:none;flex-direction:column;gap:16px}
+section.page.on{display:flex;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow);min-width:0}
+.card-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.card-h h3{margin:0;font-size:15px;font-weight:650}
+.card-h .sub{color:var(--muted);font-size:12.5px}
+.card-h .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.btn{font-size:13px;border:1px solid var(--border-2);background:var(--panel);border-radius:8px;padding:7px 14px;cursor:pointer;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.actions{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.actions .sp{flex:1}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;padding:2px;background:var(--panel-2)}
+.seg button{border:0;background:none;padding:4px 12px;border-radius:6px;font-size:12.5px;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.12);font-weight:600}
+textarea{font:13px/1.7 ui-monospace,Menlo,monospace;color:var(--text);background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px;width:100%;resize:vertical}
+select{font:inherit;font-size:12.5px;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:4px 6px}
+
+/* ---------- step 1 ---------- */
+.s1{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}
+.files{display:flex;flex-direction:column;gap:10px}
+.file{border:1.5px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;background:var(--panel);display:flex;gap:12px;text-align:left;transition:border-color .15s,box-shadow .15s}
+.file:hover{border-color:var(--border-2)}
+.file.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}
+.ficon{width:42px;height:50px;border-radius:6px;flex:none;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7px;font-size:10px;font-weight:800;color:#fff;letter-spacing:.3px}
+.ficon::before{content:"";position:absolute;top:0;right:0;border-style:solid;border-width:0 12px 12px 0;border-color:transparent var(--panel) rgba(255,255,255,.5) transparent}
+.ficon.pdf{background:#d94040}.ficon.xlsx{background:#1f8a4c}.ficon.docx{background:#2f62d0}
+.file b{display:block;font-size:13.5px;line-height:1.4;word-break:break-all}
+.file .scene{font-size:12px;color:var(--muted);margin-top:2px}
+.file .desc{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+.risk{display:inline-block;font-size:11px;font-weight:600;padding:0 7px;border-radius:99px;margin-left:4px;vertical-align:1px}
+.risk.r4{background:var(--bad-weak);color:var(--bad)} .risk.r3{background:var(--warn-weak);color:var(--warn)}
+.drop{border:1.5px dashed var(--border-2);border-radius:12px;padding:16px;text-align:center;color:var(--muted);font-size:12.5px;background:var(--panel)}
+.drop b{display:block;color:var(--text);font-size:13px;margin-bottom:2px}
+
+/* ---------- document frames ---------- */
+.docframe{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--desk);min-width:0;position:relative}
+.chrome{display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--panel);border-bottom:1px solid var(--border);font-size:12.5px}
+.chrome .ft{font-size:10px;font-weight:800;color:#fff;padding:1px 6px;border-radius:4px}
+.chrome .ft.pdf{background:#d94040}.chrome .ft.xlsx{background:#1f8a4c}.chrome .ft.docx{background:#2f62d0}
+.chrome .fn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.chrome .ctag{margin-left:auto;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--panel-2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.chrome .ctag.safe{color:var(--ok);background:var(--ok-weak);border-color:transparent}
+.docbody{padding:18px;max-height:640px;overflow:auto}
+.paper,.scan{--text:#1d2330;color:#1d2330;background:#fff;margin:0 auto;max-width:720px;box-shadow:0 1px 3px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.06);word-break:break-all}
+.paper{padding:40px 44px;font-size:13.5px;line-height:1.95}
+.paper p,.scan p{margin:0;white-space:pre-wrap}
+.paper .title{text-align:center;font-size:19px;font-weight:700;margin-bottom:10px;letter-spacing:1px}
+.paper .h{font-weight:700;margin-top:10px}
+.scan{padding:36px 40px 28px;font-family:"Songti SC","STSong","SimSun",serif;font-size:13.5px;line-height:2;position:relative;transform:rotate(-.35deg);
+  background:#fbf9f3 radial-gradient(rgba(0,0,0,.035) 1px,transparent 1px) 0 0/4px 4px;filter:contrast(1.04)}
+.scan .firm{text-align:center;font-size:18px;font-weight:700;letter-spacing:3px;border-bottom:2px solid #1d2330;padding-bottom:4px}
+.scan .sub{text-align:center;font-size:12.5px;color:#7a1f1f;margin:4px 0 8px}
+.scan .h{font-weight:700;margin-top:6px}
+.scan .pg{text-align:center;font-size:11px;color:#8a8a8a;margin-top:18px}
+.scan-badge{position:absolute;top:44px;right:26px;font-size:11px;color:#7a1f1f;border:1px solid #c98a8a;padding:0 6px;border-radius:3px;transform:rotate(4deg);background:rgba(255,255,255,.6);font-family:-apple-system,sans-serif}
+.sheet{--text:#1d2330;color:#1d2330;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);font-size:12.5px;min-width:max-content}
+.sheet table{border-collapse:collapse}
+.sheet th{background:#f1f3f5;color:#6b7280;font-weight:500;font-size:11px;border:1px solid #dde1e6;padding:2px 8px;min-width:28px;text-align:center}
+.sheet td{border:1px solid #e3e6ea;padding:5px 10px;white-space:nowrap;vertical-align:middle}
+.sheet td.title{font-weight:700;font-size:13.5px;background:#f6fbf8}
+.sheet td.hdr{background:#e9f5ee;font-weight:650}
+.sheet-tabs{display:flex;gap:2px;background:#f1f3f5;border-top:1px solid #dde1e6;padding:0 8px;font-size:11.5px}
+.sheet-tabs span{padding:4px 14px;color:#6b7280}
+.sheet-tabs span.on{background:#fff;color:#1f8a4c;font-weight:650;border-bottom:2px solid #1f8a4c}
+/* entity marks */
+.ent{background:color-mix(in srgb,var(--c) 17%,transparent);border-bottom:2px solid var(--c);border-radius:3px;padding:0 2px;cursor:pointer}
+.ent.kept{background:none;border-bottom:2px dashed color-mix(in srgb,var(--c) 65%,transparent)}
+.ent.ignored{background:none;border-bottom:2px dashed #9aa0aa;color:#9aa0aa;text-decoration:line-through}
+.rep{background:color-mix(in srgb,var(--c) 15%,transparent);color:color-mix(in srgb,var(--c) 80%,#1d2330);border-radius:3px;padding:0 3px;cursor:pointer;font-weight:650;font-family:-apple-system,"PingFang SC",sans-serif}
+.rep.black{background:#1d2330;color:#1d2330;border-radius:2px}
+.r-exact{background:#e1f3e7;color:#1d7a43;border-radius:3px;padding:0 3px;font-weight:650}
+.r-calc{background:#e3effc;color:#1a6dc0;border-radius:3px;padding:0 3px;font-weight:650;border-bottom:1px dashed #1a6dc0}
+/* OCR */
+.ocr{position:absolute;inset:38px 0 0 0;background:color-mix(in srgb,var(--desk) 55%,transparent);backdrop-filter:blur(1.5px);display:grid;place-items:center;overflow:hidden}
+.ocr-line{position:absolute;left:0;right:0;height:60px;background:linear-gradient(transparent,color-mix(in srgb,var(--accent) 35%,transparent),transparent);animation:scanline 1.1s linear infinite}
+@keyframes scanline{from{top:-60px}to{top:100%}}
+.ocr-msg{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 18px;font-size:13px;box-shadow:var(--shadow)}
+.ocr-done{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--ok);margin-top:10px}
+
+/* ---------- step 2 ---------- */
+.s2{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+.levelbox{position:sticky;top:128px}
+.lvl-cards{display:grid;gap:6px}
+.lvl{display:flex;gap:10px;align-items:flex-start;text-align:left;border:1.5px solid var(--border);border-radius:10px;padding:9px 11px;background:var(--panel);cursor:pointer;transition:border-color .15s}
+.lvl:hover{border-color:var(--border-2)}
+.lvl.on{border-color:var(--accent);background:var(--accent-weak)}
+.lvl .badge{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:12px;color:#fff}
+.lvl b{font-size:13px;display:flex;gap:6px;align-items:center}
+.lvl b em{font-style:normal;font-size:10.5px;font-weight:600;color:var(--accent);background:var(--panel);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);padding:0 6px;border-radius:99px}
+.lvl small{display:block;color:var(--muted);font-size:12px;line-height:1.5;margin-top:2px}
+.meter{display:grid;grid-template-columns:64px 1fr;gap:7px 10px;margin-top:14px;font-size:12.5px;align-items:center;padding:12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--border)}
+.pips{display:flex;gap:4px}
+.pip{height:6px;flex:1;border-radius:3px;background:var(--border)}
+.pip.on{background:var(--accent)} .pips.priv .pip.on{background:var(--ok)}
+.risklist{margin-top:14px}
+.risklist h4{font-size:12.5px;margin:0 0 6px;color:var(--muted);font-weight:600}
+.ri{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 0;border-bottom:1px dashed var(--border)}
+.ri:last-child{border:0}
+.ri .cnt{color:var(--muted)}
+.ri .st{margin-left:auto;font-size:11.5px;padding:0 7px;border-radius:99px}
+.ri .st.y{background:var(--ok-weak);color:var(--ok)} .ri .st.n{background:var(--panel-2);color:var(--muted);border:1px solid var(--border)}
+details{margin-top:12px}
+summary{cursor:pointer;font-size:12.5px;color:var(--accent)}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.row label{flex:0 0 76px;font-size:12.5px;display:flex;align-items:center;gap:6px}
+.row select{flex:1;min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none;display:inline-block}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat{border:1px solid var(--border);border-radius:10px;padding:9px 12px;background:var(--panel-2)}
+.stat b{display:block;font-size:20px;font-weight:750;line-height:1.3}
+.stat small{color:var(--muted);font-size:11.5px;line-height:1.4;display:block}
+.stat.ok b{color:var(--ok)} .stat.bad b{color:var(--bad)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cmp.single{grid-template-columns:1fr}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
+.legend span{display:flex;align-items:center;gap:5px}
+
+/* ---------- step 3 ---------- */
+.chatwin{max-width:880px;margin:0 auto;width:100%;padding:0;overflow:hidden}
+.chat-top{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border)}
+.chat-top .m{font-weight:650}
+.chat-top .ext{font-size:11.5px;padding:1px 8px;border-radius:99px;background:var(--warn-weak);color:var(--warn)}
+.notice{margin:14px 18px 0;background:var(--ok-weak);color:var(--ok);border-radius:8px;padding:8px 12px;font-size:12.5px}
+.chat{display:flex;flex-direction:column;gap:16px;padding:18px}
+.msg{display:flex;gap:10px;align-items:flex-start}
+.msg.user{flex-direction:row-reverse}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none;background:var(--panel-2);border:1px solid var(--border)}
+.msg.ai .avatar{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border:0}
+.bubble{max-width:84%;padding:11px 15px;border-radius:14px;border:1px solid var(--border);background:var(--panel);white-space:pre-wrap;line-height:1.85;font-size:13.5px}
+.msg.user .bubble{background:var(--accent-weak);border-color:transparent;border-top-right-radius:4px}
+.msg.ai .bubble{border-top-left-radius:4px}
+.bubble .rep{--text:var(--text);color:color-mix(in srgb,var(--c) 75%,var(--text))}
+.attach{margin-top:8px;border:1px solid var(--border);background:var(--panel);border-radius:10px;padding:8px 10px;font-size:12.5px;white-space:normal;display:flex;gap:10px;align-items:center}
+.attach .ficon{width:28px;height:34px;font-size:8px;padding-bottom:4px}
+.attach .ficon::before{border-width:0 8px 8px 0}
+.attach small{display:block;color:var(--ok)}
+.sent{margin:0 18px 18px}
+.sent .docbody{max-height:320px}
+.caret{display:inline-block;width:7px;height:15px;background:var(--accent);vertical-align:middle;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- step 4 ---------- */
+.s4{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.verify{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:10px;margin-bottom:12px}
+.verify.ok{background:var(--ok-weak);color:var(--ok)} .verify.bad{background:var(--bad-weak);color:var(--bad)}
+.verify .big{font-size:22px;font-weight:800;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--panel);flex:none}
+.verify small{display:block;opacity:.85}
+.replybox{white-space:pre-wrap;line-height:1.9;font-size:13.5px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.replybox .r-exact{background:var(--ok-weak);color:var(--ok)} .replybox .r-calc{background:color-mix(in srgb,var(--calc) 14%,transparent);color:var(--calc);border-color:var(--calc)}
+table.map{border-collapse:collapse;width:100%;font-size:12.5px}
+table.map th,table.map td{border-bottom:1px solid var(--border);padding:7px 10px;text-align:left}
+table.map th{color:var(--muted);font-weight:600;background:var(--panel-2)}
+.mono{font-family:ui-monospace,Menlo,monospace}
+.scroll{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-top:10px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9;max-width:calc(100% - 32px)}
+.toast.show{opacity:1}
+
+@media (max-width:1020px){
+  .head,.stepper,.wrap{padding-left:16px;padding-right:16px}
+  .s1,.s2,.s4,.cmp{grid-template-columns:1fr}
+  .levelbox{position:static}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:640px){
+  header{position:static}
+  .stepper{grid-template-columns:repeat(4,1fr);gap:4px}
+  .step{flex-direction:column;gap:2px;padding:6px 4px;text-align:center}
+  .step small{display:none}
+  .step b{font-size:11.5px}
+  .badge-local{margin-left:0}
+  .paper{padding:24px 20px}.scan{padding:24px 18px}
+  .docbody{padding:10px}
+  .bubble{max-width:100%}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <div class="logo">脱</div>
+    <div class="brand"><b>AI 脱敏助手</b><small>高敏感文件的 AI 安全使用流程 · 演示版</small></div>
+    <span class="badge-local"><i></i>本地处理 · 原文与映射表不出浏览器</span>
+  </div>
+  <div class="stepper" id="stepper"></div>
+</header>
+
+<div class="wrap">
+  <!-- STEP 1 -->
+  <section class="page" data-step="1">
+    <div class="s1">
+      <div class="files">
+        <div id="files" class="files"></div>
+        <div class="drop"><b>⬆ 拖拽文件到这里</b>支持 PDF（含扫描件）、Word、Excel · 演示版仅可使用示例文件</div>
+        <p class="hint" style="margin:0">所有示例中的人名、机构、证件号、数据均为虚构。</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>文件预览</h3><span class="sub" id="docMeta"></span></div>
+        <div id="srcFrame"></div>
+        <div id="ocrDone"></div>
+        <details><summary>编辑解析出的文本（演示用，修改后会重新识别）</summary><textarea id="src" rows="10" style="margin-top:8px"></textarea></details>
+      </div>
+    </div>
+    <div class="actions"><span class="sp"></span><button class="btn primary" data-go="2">下一步：设置脱敏级别 →</button></div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="page" data-step="2">
+    <div class="s2">
+      <div class="card levelbox">
+        <div class="card-h"><h3>脱敏级别</h3><span class="sub">级别越高越安全，可用性越低</span></div>
+        <div class="lvl-cards" id="lvlCards"></div>
+        <div class="meter" id="meter"></div>
+        <div class="risklist" id="riskList"></div>
+        <details id="adv"><summary>高级：按信息类型自定义</summary><div id="typeRows" style="margin-top:8px"></div></details>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>脱敏预览</h3><span class="sub">点击高亮内容可单独取消或恢复</span>
+          <span class="right"><span class="seg" id="viewSeg"><button data-v="both">对照</button><button data-v="src">原文</button><button data-v="out">脱敏版</button></span></span></div>
+        <div class="stats" id="stats"></div>
+        <div class="cmp" id="cmp"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+    <div class="actions"><button class="btn" data-go="1">← 上一步</button><span class="sp"></span><button class="btn primary" data-go="3">下一步：发送给 AI →</button></div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="page" data-step="3">
+    <div class="card chatwin">
+      <div class="chat-top"><div class="avatar" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border:0">AI</div><span class="m">通用大模型</span><span class="ext">外部服务</span><span class="sub" style="margin-left:auto;font-size:12px;color:var(--muted)">模拟对话</span></div>
+      <div class="notice">🔒 AI 收到的只有脱敏版本。原文和映射表一直留在你的浏览器里，不会上传。</div>
+      <div class="chat">
+        <div class="msg user"><div class="avatar">我</div><div class="bubble" id="askBubble"></div></div>
+        <div class="msg ai"><div class="avatar">AI</div><div class="bubble" id="aiBubble"></div></div>
+      </div>
+      <details class="sent"><summary>查看 AI 实际收到的文件</summary><div id="sentFrame" style="margin-top:8px"></div></details>
+    </div>
+    <div class="actions" style="max-width:880px;margin:0 auto;width:100%"><button class="btn" data-go="2">← 调整级别</button><span class="sp"></span><button class="btn primary" id="toStep4" data-go="4" disabled>下一步：还原结果 →</button></div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="page" data-step="4">
+    <div class="s4">
+      <div class="card">
+        <div class="card-h"><h3>AI 回复 · 已还原</h3><span class="sub">直接可用的真实结论</span></div>
+        <div class="replybox" id="restoredReply"></div>
+        <div class="legend"><span><span class="r-exact">绿色</span>按映射表换回</span><span><span class="r-calc">蓝色</span>AI 新算出的数值，已按系数反算</span></div>
+        <p class="hint" id="replyNote"></p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>文件还原</h3><span class="sub">脱敏版 → 原始文件</span><span class="right"><button class="btn" id="dlFile">下载还原文件</button></span></div>
+        <div id="verify"></div>
+        <div id="restoredFrame"></div>
+      </div>
+    </div>
+    <div class="card">
+      <details open style="margin:0"><summary style="font-size:14px;font-weight:650;color:var(--text)">映射表 <span class="sub" style="font-weight:400;color:var(--muted);font-size:12.5px">只保存在本地，用于还原</span></summary>
+        <div class="scroll"><table class="map" id="mapTable"></table></div>
+      </details>
+    </div>
+    <div class="actions"><button class="btn" data-go="3">← 上一步</button><span class="sp"></span><button class="btn primary" id="restart">处理下一份文件 →</button></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 工具函数 ================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fnv(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}return h>>>0;}
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const SEED='demo-2026';
+const hr=k=>mulberry(fnv(SEED+'|'+k))();
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2200);}
+const W=[7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2];
+function idCheck(s){let n=0;for(let i=0;i<17;i++)n+=+s[i]*W[i];return '10X98765432'[n%11];}
+function idValid(s){if(idCheck(s)!==s[17].toUpperCase())return false;const m=+s.slice(10,12),d=+s.slice(12,14);return m>=1&&m<=12&&d>=1&&d<=31;}
+function luhn(s){let n=0,a=false;for(let i=s.length-1;i>=0;i--){let d=+s[i];if(a){d*=2;if(d>9)d-=9;}n+=d;a=!a;}return n%10===0;}
+function fmtNum(n,dec,comma){let s=Math.abs(n).toFixed(dec);if(comma){const[i,f]=s.split('.');s=i.replace(/\B(?=(\d{3})+(?!\d))/g,',')+(f!==undefined?'.'+f:'');}return(n<0?'-':'')+s;}
+const decOf=s=>(s.split('.')[1]||'').length;
+const toNum=s=>parseFloat(s.replace(/,/g,''));
+function factorFor(k){let f=0.45+hr(k)*1.1;if(Math.abs(f-1)<0.15)f+=0.3;return Math.round(f*10000)/10000;}
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const ID=s=>s+idCheck(s);
+
+/* ================= 信息类型 / 脱敏级别 ================= */
+const TYPES={
+  person:  {label:'人名',     short:'人名',   color:'#e8590c',src:'语义'},
+  company: {label:'机构名称', short:'机构',   color:'#7048e8',src:'语义'},
+  address: {label:'地址',     short:'地址',   color:'#0ca678',src:'语义'},
+  custom:  {label:'项目/化合物代号',short:'代号',color:'#0c8599',src:'词库'},
+  caseno:  {label:'案号',     short:'案号',   color:'#9c36b5',src:'规则'},
+  idno:    {label:'编号/执业证号',short:'编号',color:'#5f3dc4',src:'规则'},
+  idcard:  {label:'身份证号', short:'身份证', color:'#d6336c',src:'规则'},
+  phone:   {label:'手机号',   short:'手机',   color:'#1c7ed6',src:'规则'},
+  email:   {label:'邮箱',     short:'邮箱',   color:'#1098ad',src:'规则'},
+  bankcard:{label:'银行账号', short:'账号',   color:'#c2255c',src:'规则'},
+  credit:  {label:'信用代码', short:'信用代码',color:'#5c940d',src:'规则'},
+  amount:  {label:'金额',     short:'金额',   color:'#e67700',src:'规则'},
+  measure: {label:'实验数值', short:'数值',   color:'#d9480f',src:'规则'},
+};
+const STRAT={keep:'不处理',placeholder:'占位符 [人名_1]',mask:'打码 138****5678',generalize:'泛化（保留到区县）',scale:'等比缩放',range:'区间化'};
+const OPTS=t=>['amount','measure'].includes(t)?['keep','scale','range']:t==='address'?['keep','placeholder','generalize','mask']:['keep','placeholder','mask'];
+const STRONG={idcard:'mask',bankcard:'mask',phone:'mask',email:'mask',credit:'mask',idno:'mask'};
+const PH={person:'placeholder',company:'placeholder',address:'placeholder',custom:'placeholder',caseno:'placeholder'};
+const LEVELS=[
+  {name:'基础',tag:'内部流转',color:'#2f9e44',privacy:1,usable:4,
+   desc:'只给证件号、手机、邮箱、账号等强标识打码，其余保持原样',
+   s:{...STRONG,person:'keep',company:'keep',address:'keep',custom:'keep',caseno:'mask',amount:'keep',measure:'keep'}},
+  {name:'标准',tag:'跨部门协作',color:'#1c7ed6',privacy:2,usable:4,
+   desc:'再把人名、机构、地址、案号、代号换成占位符，数值保留',
+   s:{...STRONG,...PH,amount:'keep',measure:'keep'}},
+  {name:'增强',tag:'推荐 · 发给 AI',color:'#4253d6',privacy:3,usable:3,
+   desc:'再把金额与实验数值等比缩放：隐藏真实规模，比例和趋势不变',
+   s:{...STRONG,...PH,amount:'scale',measure:'scale'}},
+  {name:'彻底',tag:'对外公开',color:'#c62f2f',privacy:4,usable:1,noMap:true,
+   desc:'全部打码、数值区间化，不保留映射表，无法还原',
+   s:{...STRONG,person:'mask',company:'mask',address:'generalize',custom:'mask',caseno:'mask',amount:'range',measure:'range'}},
+];
+
+/* ================= 示例文件（均为虚构） ================= */
+const DRUG_ROWS=[
+  ['ZD-2817 I 期临床试验 PK 数据（靶点 KRAS G12C）· 公司机密'],
+  ['受试者编号','姓名','身份证号','研究中心','主要研究者','剂量组','Cmax','AUC0-t','t½','不良事件'],
+  ['S-001','赵一鸣',ID('31010419850612032'),'上海瑞和医院','刘洋','50 mg','286.4 ng/mL','3,412 ng·h/mL','11.6 h','无'],
+  ['S-002','孙雅婷',ID('33010619920318124'),'上海瑞和医院','刘洋','50 mg','301.2 ng/mL','3,580 ng·h/mL','12.1 h','轻度头痛'],
+  ['S-003','周子航',ID('11010519780925211'),'杭州明德医院','何嘉禾','100 mg','598.7 ng/mL','7,046 ng·h/mL','11.9 h','无'],
+  ['S-004','吴佳怡',ID('44030519880101342'),'杭州明德医院','何嘉禾','100 mg','575.3 ng/mL','6,872 ng·h/mL','12.4 h','轻度恶心'],
+  ['S-005','郑浩然',ID('51010719950707156'),'上海瑞和医院','刘洋','200 mg','1,163.5 ng/mL','14,205 ng·h/mL','12.0 h','中度恶心'],
+  ['S-006','冯若溪',ID('31011519830214227'),'杭州明德医院','何嘉禾','200 mg','1,208.9 ng/mL','14,688 ng·h/mL','11.7 h','无'],
+];
+const DOCS=[
+ {kind:'pdf',ext:'PDF',name:'案件情况说明（扫描件）.pdf',meta:'扫描件 · 1 页 · 2.4 MB',scene:'律师事务所 · 诉讼案件',risk:4,
+  desc:'当事人身份、证据线索、诉讼策略与和解底线，属律师工作成果',dict:['星辰数据中台'],
+  ask:'请基于这份案件材料，评估我方诉讼请求的合理性，并给出和解谈判建议。',
+  text:`上海明衡律师事务所
+案件情况说明（内部材料 · 律师工作成果 · 严禁外传）
+案号：（2026）沪0115民初18273号
+案由：技术服务合同纠纷
+委托人（原告）：上海星辰科技有限公司，法定代表人：王建国，统一社会信用代码 91310115MA1H8KQ27X
+对方（被告）：杭州云帆数据股份有限公司，住所地：杭州市余杭区文一西路998号
+承办律师：周立言（执业证号 13101201810123456，手机 13761234567）
+一、案情摘要
+被告于 2025 年 3 月承接原告"星辰数据中台"项目，合同总价 2,150万元。项目验收延期 214 天，原告已支付 1,505万元，被告主张剩余 645万元 尾款。
+二、关键证据
+1. 2025 年 11 月 7 日被告技术负责人张伟 的微信记录，承认核心模块未按期交付；
+2. 证人李晓梅（原告项目经理，身份证 110101199003071233）的书面证言；
+3. 原告向被告账户 6222021001115678903 付款的银行回单。
+三、诉讼策略（高度机密）
+诉请金额：返还已付款 1,505万元 并支付违约金 430万元，合计 1,935万元。
+委托人可接受的和解底线：被告退还 600万元 以上，可放弃违约金主张。`,
+  reply(h){
+    const A=v=>h.N('amount',v), ok=['2,150万元','1,505万元','645万元','430万元','1,935万元','600万元'].every(v=>A(v)!=null);
+    const L=['以下是基于案件材料的分析：',''];
+    L.push(`1. 本案（${h.V('caseno','（2026）沪0115民初18273号')}）系 ${h.V('company','上海星辰科技有限公司')} 诉 ${h.V('company','杭州云帆数据股份有限公司')} 的技术服务合同纠纷。`+
+      (ok?`合同总价 ${h.V('amount','2,150万元')}，委托人已付 ${h.V('amount','1,505万元')}（占 ${h.pct(A('1,505万元')/A('2,150万元'))}），被告主张尾款 ${h.V('amount','645万元')}，三者数额自洽。`:''));
+    if(ok){
+      L.push(`2. 诉请合计 ${h.V('amount','1,935万元')}，其中违约金 ${h.V('amount','430万元')}，约为合同总价的 ${h.pct(A('430万元')/A('2,150万元'))}，处于司法实践中较易获支持的区间。`);
+      L.push(`3. 和解底线 ${h.V('amount','600万元')} 相当于已付款的 ${h.pct(A('600万元')/A('1,505万元'))}。建议首轮报价定在 ${h.amt((A('1,505万元')+A('600万元'))/2,'1,505万元')} 左右，为谈判留出空间。`);
+    } else L.push('2. 金额已区间化，只能判断量级，无法精确评估诉请与和解空间。');
+    L.push(`${L.length-1}. 证据层面，${h.V('person','张伟')} 的微信记录是核心证据，建议尽快办理公证；证人 ${h.V('person','李晓梅')} 需提前做好出庭准备，整体由 ${h.V('person','周立言')} 律师统筹。`);
+    return L.join('\n');
+  }},
+ {kind:'xlsx',ext:'XLSX',name:'ZD-2817_I期PK数据.xlsx',meta:'Excel · 1 个工作表 · 6 名受试者',scene:'药企 · 临床研发',risk:4,sheet:'PK数据',
+  desc:'受试者身份、化合物代号与靶点、尚未公开的药代动力学数据',dict:['KRAS G12C'],
+  ask:'请分析各剂量组的 PK 数据，判断是否呈线性药代动力学特征，并汇总不良事件。',
+  text:DRUG_ROWS.map(r=>r.join('\t')).join('\n'),
+  reply(h){
+    const rows=h.text.split('\n').map(l=>l.split('\t')), hi=rows.findIndex(r=>r.length>1), hdr=rows[hi], data=rows.slice(hi+1);
+    const ci=n=>hdr.findIndex(x=>x.startsWith(n)), grp={};
+    data.forEach(r=>(grp[r[ci('剂量组')]] ||= []).push(r));
+    const doses=Object.keys(grp);
+    const mean=(rs,c)=>{const v=rs.map(r=>h.N('measure',r[c]));return v.some(x=>x==null)?null:v.reduce((a,b)=>a+b,0)/v.length;};
+    const unit=c=>data[0][c].replace(/^[\d.,\s]+/,'');
+    const cm=doses.map(d=>mean(grp[d],ci('Cmax'))), au=doses.map(d=>mean(grp[d],ci('AUC'))), th=mean(data,ci('t½'));
+    const f=(n,c)=>fmtNum(n,1,true)+' '+unit(c), code=h.V('custom','ZD-2817');
+    const L=['PK 数据分析如下：',''];
+    if([...cm,...au,th].every(x=>x!=null)){
+      L.push(`1. ${code} 在 ${doses.map(d=>h.V('measure',d)).join(' / ')} 三个剂量组的平均 Cmax 分别为 ${cm.map(x=>f(x,ci('Cmax'))).join('、')}；平均 AUC 分别为 ${au.map(x=>f(x,ci('AUC'))).join('、')}。`);
+      L.push(`2. 剂量每提高 1 倍，Cmax 增至 ${(cm[1]/cm[0]).toFixed(2)} 倍和 ${(cm[2]/cm[1]).toFixed(2)} 倍，AUC 增至 ${(au[1]/au[0]).toFixed(2)} 倍和 ${(au[2]/au[1]).toFixed(2)} 倍，与剂量基本成比例，提示在该剂量范围内呈线性药代动力学特征。`);
+      L.push(`3. 平均半衰期约 ${f(th,ci('t½'))}，各剂量组间差异很小，说明消除过程不随剂量改变。`);
+    } else L.push(`1. ${code} 的实验数值已区间化，只能看出各剂量组的量级，无法判断是否线性。`);
+    const ae=data.filter(r=>r[ci('不良事件')]!=='无'), sev=data.find(r=>r[ci('不良事件')].startsWith('中度'));
+    L.push(`${L.length-1}. 6 例受试者中 ${ae.length} 例报告不良事件，均为轻至中度；受试者 ${sev[0]}（${h.V('person',sev[1])}，${h.V('company',sev[3])}）在 ${h.V('measure',sev[ci('剂量组')])} 组出现中度恶心，建议主要研究者 ${h.V('person',sev[4])} 加强随访。`);
+    return L.join('\n');
+  }},
+ {kind:'docx',ext:'DOCX',name:'数据中台建设项目合同.docx',meta:'Word 文档 · 2 页 · 186 KB',scene:'企业 · 项目合同',risk:3,
+  desc:'合同价款与付款节点、收款账户、签约人及联系方式',dict:['星辰数据中台'],
+  ask:'请审阅这份合同，核对付款节点金额，并指出对我方（甲方）不利的条款。',
+  text:`数据中台建设项目合同
+合同编号：XC-2026-0915
+甲方（委托方）：上海星辰科技有限公司
+统一社会信用代码：91310115MA1H8KQ27X
+地址：上海市浦东新区张江路88号
+乙方（服务方）：杭州云帆数据股份有限公司
+项目负责人：张伟，电话 13700001111，邮箱 zhangwei@yunfan-data.com
+第一条 项目内容
+乙方为甲方建设"星辰数据中台"，覆盖 12 家子公司的经营数据接入、治理与分析，项目周期 10 个月。
+第二条 合同价款
+合同总价为人民币 ¥2,150,000.00（含 6% 增值税），按以下节点支付：
+（一）合同签订后 10 个工作日内，支付 30%，即 645,000.00元；
+（二）系统上线验收通过后，支付 50%，即 1,075,000.00元；
+（三）质保期满且无重大缺陷，支付 20%，即 430,000.00元。
+第三条 收款账户
+户名：杭州云帆数据股份有限公司，开户行：招商银行杭州分行，账号：6222021001115678903
+第四条 保密与违约
+双方对本合同内容及项目中获取的经营数据负有保密义务，违约方应按合同总价的 20% 支付违约金。
+甲方代表（签字）：王建国　　乙方代表（签字）：张伟
+签订日期：2026 年 9 月 15 日`,
+  reply(h){
+    const A=v=>h.N('amount',v), P=['645,000.00元','1,075,000.00元','430,000.00元'], T='¥2,150,000.00', ok=[...P,T].every(v=>A(v)!=null);
+    const L=['合同审阅意见：',''];
+    L.push(`1. 合同双方：甲方 ${h.V('company','上海星辰科技有限公司')}，乙方 ${h.V('company','杭州云帆数据股份有限公司')}；乙方项目负责人 ${h.V('person','张伟')}（${h.V('phone','13700001111')}）。`);
+    if(ok){const s=P.reduce((a,v)=>a+A(v),0);
+      L.push(`2. 三期付款 ${P.map(v=>h.V('amount',v)).join('、')}，合计 ${h.amt(s,P[0])}，与合同总价 ${h.V('amount',T)} ${Math.abs(s-A(T))<1?'一致 ✓':'不一致 ✗'}；比例分别为 ${P.map(v=>h.pct(A(v)/A(T))).join(' / ')}。`);
+      L.push(`3. 违约金按合同总价 20% 计为 ${h.amt(A(T)*0.2,P[0])}，但合同未约定乙方逾期交付的按日违约金，对甲方不利，建议补充。`);
+    } else L.push('2. 金额已区间化，无法核对三期付款与总价是否一致。');
+    L.push(`${L.length-1}. "${h.V('custom','星辰数据中台')}"的验收标准未在合同中明确，建议以附件形式补充；收款账户 ${h.V('bankcard','6222021001115678903')} 的户名需与乙方工商登记信息一致。`);
+    return L.join('\n');
+  }},
+];
+
+const state={step:1,doc:0,level:3,custom:false,strategy:{...LEVELS[2].s},ignored:new Set(),visited:new Set([1]),view:'both',ocrDone:new Set()};
+
+/* ================= 识别引擎 ================= */
+const SUR='王李张刘陈杨黄赵吴周徐孙马朱胡郭何林高罗郑梁谢宋唐许韩冯邓曹彭曾萧田董袁潘蒋蔡余杜叶程苏魏吕丁任沈姚卢姜崔钟谭陆汪范金石廖贾夏韦付方白邹孟熊秦邱江尹薛闫段雷侯龙史陶黎贺顾毛郝龚邵钱严覃武戴莫孔汤欧';
+const NAME_CTX='法定代表人|项目负责人|技术负责人|主要研究者|承办律师|联系人|负责人|研究者|律师|法官|证人|当事人|经理|总监|主管|签字人|对接人|代表|姓名|员工';
+const NAME_RES=[
+  new RegExp(`(?:${NAME_CTX})(?:[（(]签字[）)])?[：:\\s]*([${SUR}][\\u4e00-\\u9fa5]{1,2})(?=[（(，,。；;、\\s]|先生|女士|$)`,'dg'),
+  new RegExp(`([${SUR}][\\u4e00-\\u9fa5]{1,2}?)(?:先生|女士)`,'dg'),
+  new RegExp(`(?:由|请|让)([${SUR}][\\u4e00-\\u9fa5]{1,2}?)(?:负责|对接|跟进|牵头)`,'dg'),
+];
+const RULES=[
+  ['idno',/(?:执业证号|合同编号|项目编号|病历号|住院号)[：:\s]*([A-Z0-9][A-Z0-9-]{5,19})/dg,null,1],
+  ['caseno',/[（(]\d{4}[）)][一-龥]{1,2}\d{2,4}[一-龥]{1,3}\d+号/dg],
+  ['idcard',/(?<![\dA-Za-z])\d{17}[\dXx](?![\dA-Za-z])/dg,idValid],
+  ['bankcard',/(?<!\d)\d{16,19}(?!\d)/dg,luhn],
+  ['phone',/(?<!\d)1[3-9]\d{9}(?!\d)/dg],
+  ['email',/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/dg],
+  ['credit',/(?<![0-9A-Z])[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}(?![0-9A-Z])/dg,v=>/[A-Z]/.test(v)],
+  ['custom',/(?<![A-Za-z0-9])[A-Z]{2,4}-\d{3,5}(?![\d-])/dg],
+];
+const ADDR_RE=/(?:[一-龥]{2,3}省)?[一-龥]{2,3}市[一-龥]{2,6}?(?:区|县)[一-龥]{1,10}?(?:路|街|大道|道)\d+号/g;
+const COMP_RE=/[一-龥]{2,16}?(?:股份有限公司|有限责任公司|有限公司|集团|律师事务所|医院|研究院|研究所)/g;
+const AMT_RE=/(?<![\d.,A-Za-z])([¥￥]\s?)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)(\s?(?:亿元|万元|千元|元|亿|万))?(?![\d%])/g;
+const MEAS_RE=/(?<![\d.,A-Za-z])((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)(\s?)(ng·h\/mL|ng\/mL|mg\/kg|mg|μM|nM|h)(?![A-Za-z\/·])/g;
+const LEAD=['其中','以及','来自','位于','包括','对','与','和','及','向','由','是','在','从','给','为','于','的'];
+function stripLead(v){let c=0,ch=true;while(ch){ch=false;for(const p of LEAD)if(v.startsWith(p,c)&&v.length-c-p.length>=4){c+=p.length;ch=true;break;}}return c;}
+const PRI=['idno','caseno','idcard','bankcard','credit','phone','email','address','company','person','custom','measure','amount'];
+
+function detect(text){
+  const c=[], push=(type,start,value,meta)=>c.push({type,start,end:start+value.length,value,meta});
+  for(const[t,re,ok,g]of RULES){re.lastIndex=0;let m;while((m=re.exec(text))){const k=g||0;if(!ok||ok(m[k]))push(t,m.indices[k][0],m[k]);}}
+  for(const[t,re]of[['address',ADDR_RE],['company',COMP_RE]]){re.lastIndex=0;let m;while((m=re.exec(text))){const k=stripLead(m[0]);push(t,m.index+k,m[0].slice(k));}}
+  const names=new Set();
+  for(const re of NAME_RES){re.lastIndex=0;let m;while((m=re.exec(text)))names.add(m[1]);}
+  // 表格：按表头语义整列识别（姓名列、研究者列、机构列）
+  if(DOCS[state.doc].kind==='xlsx'){
+    let off=0,hdr=null;
+    for(const line of text.split('\n')){
+      const cells=line.split('\t');
+      if(!hdr&&cells.length>1)hdr=cells.map(h=>/姓名|研究者|联系人|负责人/.test(h)?'person':/研究中心|医院|机构|单位/.test(h)?'company':null);
+      else if(hdr){let co=off;cells.forEach((v,j)=>{if(hdr[j]&&v.trim()){if(hdr[j]==='person')names.add(v.trim());else push('company',co,v);}co+=v.length+1;});}
+      off+=line.length+1;
+    }
+  }
+  const all=(t,w)=>{let i=-1;while((i=text.indexOf(w,i+1))!==-1)push(t,i,w);};
+  names.forEach(n=>all('person',n));
+  DOCS[state.doc].dict.forEach(w=>all('custom',w));
+  let m;
+  AMT_RE.lastIndex=0;
+  while((m=AMT_RE.exec(text))){if(!m[1]&&!m[3])continue;push('amount',m.index,m[0],{prefix:m[1]||'',num:toNum(m[2]),dec:decOf(m[2]),comma:m[2].includes(','),unit:m[3]||''});}
+  MEAS_RE.lastIndex=0;
+  while((m=MEAS_RE.exec(text)))push('measure',m.index,m[0],{num:toNum(m[1]),dec:decOf(m[1]),comma:m[1].includes(','),sp:m[2],unit:m[3]});
+  c.sort((a,b)=>PRI.indexOf(a.type)-PRI.indexOf(b.type)||(b.end-b.start)-(a.end-a.start)||a.start-b.start);
+  const out=[];for(const x of c)if(!out.some(t=>x.start<t.end&&t.start<x.end))out.push(x);
+  return out.sort((a,b)=>a.start-b.start);
+}
+
+/* ================= 脱敏处理 ================= */
+const orgSuffix=v=>(v.match(/(股份有限公司|有限责任公司|有限公司|集团|律师事务所|医院|研究院|研究所)$/)||[''])[0];
+const MASK={
+  person:v=>v[0]+'*'.repeat(v.length-1), company:v=>v.slice(0,2)+'****'+orgSuffix(v), address:v=>v.slice(0,3)+'******',
+  phone:v=>v.slice(0,3)+'****'+v.slice(7), idcard:v=>v.slice(0,6)+'********'+v.slice(14),
+  bankcard:v=>v.slice(0,4)+'*'.repeat(v.length-8)+v.slice(-4), email:v=>{const[a,b]=v.split('@');return a[0]+'***@'+b;},
+  credit:v=>v.slice(0,4)+'**********'+v.slice(-4), custom:v=>'*'.repeat(v.length),
+  caseno:v=>v.slice(0,7)+'*****号', idno:v=>v.slice(0,3)+'*'.repeat(Math.max(v.length-5,3))+v.slice(-2),
+};
+const rangeOf=n=>{const p=Math.pow(10,Math.floor(Math.log10(Math.max(n,1))));const lo=Math.floor(n/p)*p;return[lo,lo+p];};
+const unitF=u=>factorFor('m|'+u);
+let cur={};
+function process(){
+  const text=$('#src').value, ents=detect(text), map=new Map(), cnt={}, F=factorFor('amount');
+  for(const e of ents){
+    e.key=e.type+'|'+e.value;
+    if(map.has(e.key))continue;
+    const s=state.strategy[e.type], i={key:e.key,type:e.type,value:e.value,meta:e.meta,strategy:s};
+    if(s!=='keep')cnt[e.type]=(cnt[e.type]||0)+1;
+    i.idx=cnt[e.type];
+    if(e.type==='amount'){
+      const{prefix,num,dec,comma,unit}=e.meta;
+      if(s==='range'){const[a,b]=rangeOf(num);i.out=prefix+fmtNum(a,0,comma)+'-'+fmtNum(b,0,comma)+unit;}
+      else{i.newNum=s==='scale'?num*F:num;i.out=prefix+fmtNum(i.newNum,dec,comma)+unit;}
+    } else if(e.type==='measure'){
+      const{num,dec,comma,sp,unit}=e.meta;
+      if(s==='range'){const[a,b]=rangeOf(num);i.out=fmtNum(a,0,comma)+'-'+fmtNum(b,0,comma)+sp+unit;}
+      else{i.newNum=s==='scale'?num*unitF(unit):num;i.out=fmtNum(i.newNum,s==='scale'?Math.min(dec+1,3):dec,comma)+sp+unit;}
+    }
+    else if(s==='placeholder')i.out=`[${TYPES[e.type].short}_${i.idx}]`;
+    else if(s==='mask')i.out=MASK[e.type](e.value);
+    else if(s==='generalize')i.out=(e.value.match(/^.*?(?:区|县)/)||[e.value.slice(0,3)])[0];
+    else i.out=e.value;
+    map.set(e.key,i);
+  }
+  let plain='',p=0;
+  for(const e of ents){const i=map.get(e.key);plain+=text.slice(p,e.start)+(active(i)?i.out:e.value);p=e.end;}
+  plain+=text.slice(p);
+  // 可还原：保留映射表 + 非多对一处理 + 输出唯一
+  const oc={};map.forEach(i=>{if(active(i))oc[i.out]=(oc[i.out]||0)+1;});
+  map.forEach(i=>i.reversible=!noMap()&&active(i)&&!['generalize','range'].includes(i.strategy)&&oc[i.out]===1);
+  cur={text,ents,map,F,plain};
+}
+const active=i=>i&&i.strategy!=='keep'&&!state.ignored.has(i.key)&&i.out!==i.value;
+const noMap=()=>!state.custom&&LEVELS[state.level-1].noMap;
+
+/* ================= 文档渲染 ================= */
+function segHtml(mode){
+  const{text,ents,map}=cur;let h='',p=0;
+  for(const e of ents){
+    h+=esc(text.slice(p,e.start));
+    const i=map.get(e.key),c=TYPES[e.type].color,ig=state.ignored.has(e.key),on=active(i);
+    const tip=esc(`${TYPES[e.type].label}（${TYPES[e.type].src}识别）· ${STRAT[i.strategy]}：${e.value} → ${i.out}`);
+    if(mode==='plain')h+=esc(e.value);
+    else if(mode==='src')h+=`<span class="ent ${ig?'ignored':on?'':'kept'}" data-key="${esc(e.key)}" style="--c:${c}" title="${ig?'已手动取消，点击恢复':on?tip:'识别到，但当前级别不处理'}">${esc(e.value)}</span>`;
+    else h+=on?`<span class="rep" data-key="${esc(e.key)}" style="--c:${c}" title="${tip}">${esc(i.out)}</span>`:esc(e.value);
+    p=e.end;
+  }
+  return h+esc(text.slice(p));
+}
+function frame(html,o={}){
+  const d=DOCS[state.doc], raw=cur.text.split('\n'), lines=html.split('\n');
+  const name=o.out?d.name.replace(/(\.\w+)$/,'_脱敏$1'):d.name;
+  const chrome=`<div class="chrome"><span class="ft ${d.kind}">${d.ext}</span><span class="fn">${esc(name)}</span>${o.tag?`<span class="ctag ${o.safe?'safe':''}">${o.tag}</span>`:''}</div>`;
+  let body;
+  if(d.kind==='xlsx'){
+    const rows=lines.map(l=>l.split('\t')), nc=Math.max(...rows.map(r=>r.length)), hi=raw.findIndex(l=>l.includes('\t'));
+    body=`<div class="sheet"><table><tr><th></th>${[...'ABCDEFGHIJKLMNOP'].slice(0,nc).map(c=>`<th>${c}</th>`).join('')}</tr>`+
+      rows.map((r,i)=>`<tr><th>${i+1}</th>`+(r.length===1&&nc>1?`<td colspan="${nc}" class="${i<hi?'title':''}">${r[0]}</td>`:r.map(c=>`<td class="${i===hi?'hdr':''}">${c}</td>`).join(''))+'</tr>').join('')+
+      `</table><div class="sheet-tabs"><span class="on">${d.sheet}</span><span>汇总</span><span>＋</span></div></div>`;
+  } else if(d.kind==='pdf'){
+    body=`<div class="scan">${o.ocrBadge?'<span class="scan-badge">扫描件</span>':''}${lines.map((l,i)=>`<p class="${i===0?'firm':i===1?'sub':/^[一二三四五六七八九]、/.test(raw[i]||'')?'h':''}">${l||'&nbsp;'}</p>`).join('')}<div class="pg">— 第 1 页 / 共 1 页 —</div></div>`;
+  } else {
+    body=`<div class="paper">${lines.map((l,i)=>`<p class="${i===0?'title':/^第.{1,3}条/.test(raw[i]||'')?'h':''}">${l||'&nbsp;'}</p>`).join('')}</div>`;
+  }
+  return `<div class="docframe">${chrome}<div class="docbody">${body}</div>${o.overlay||''}</div>`;
+}
+
+/* ================= 步骤 1：选择文件 ================= */
+let ocrTimer=null;
+function renderStep1(){
+  process();
+  const d=DOCS[state.doc];
+  $('#files').innerHTML=DOCS.map((x,i)=>`<button class="file ${i===state.doc?'on':''}" data-doc="${i}">
+    <span class="ficon ${x.kind}">${x.ext}</span>
+    <span><b>${esc(x.name)}</b><span class="scene">${x.scene}<span class="risk r${x.risk}">${x.risk===4?'极高敏感':'高敏感'}</span></span><span class="desc">${x.desc}</span></span></button>`).join('');
+  $('#docMeta').textContent=d.meta;
+  clearInterval(ocrTimer);
+  if(d.kind==='pdf'&&!state.ocrDone.has(state.doc)){
+    $('#srcFrame').innerHTML=frame(segHtml('plain'),{ocrBadge:true,overlay:'<div class="ocr"><div class="ocr-line"></div><div class="ocr-msg">正在 OCR 识别扫描件… <b id="ocrPct">0%</b></div></div>'});
+    $('#ocrDone').innerHTML='';
+    let p=0;ocrTimer=setInterval(()=>{p+=7;const el=$('#ocrPct');if(el)el.textContent=Math.min(p,100)+'%';
+      if(p>=100){clearInterval(ocrTimer);state.ocrDone.add(state.doc);renderStep1();}},90);
+  } else {
+    $('#srcFrame').innerHTML=frame(segHtml('plain'),{ocrBadge:true,tag:d.kind==='pdf'?'已 OCR':'已解析'});
+    $('#ocrDone').innerHTML=d.kind==='pdf'?`<div class="ocr-done">✓ OCR 完成：识别 ${cur.text.replace(/\s/g,'').length} 字，平均置信度 98.7%，版式已保留</div>`:'';
+  }
+}
+$('#files').onclick=e=>{const b=e.target.closest('[data-doc]');if(!b)return;selectDoc(+b.dataset.doc);};
+function selectDoc(i){state.doc=i;state.ignored.clear();$('#src').value=DOCS[i].text;replyCache=null;renderStep1();}
+$('#src').oninput=()=>{replyCache=null;renderStep1();};
+
+/* ================= 步骤 2：脱敏级别 ================= */
+function renderLevel(){
+  const L=LEVELS[state.level-1];
+  $('#lvlCards').innerHTML=LEVELS.map((l,i)=>`<button class="lvl ${!state.custom&&state.level===i+1?'on':''}" data-l="${i+1}">
+    <span class="badge" style="background:${l.color}">L${i+1}</span>
+    <span><b>${l.name}${i===2?' <em>推荐</em>':''}<span style="font-weight:400;color:var(--muted);font-size:11.5px">· ${l.tag}</span></b><small>${l.desc}</small></span></button>`).join('')+
+    (state.custom?`<div class="hint" style="margin:2px 0 0">当前为<b>自定义</b>（基于 L${state.level}），点击任一级别可恢复预设。</div>`:'');
+  const pips=(n,cls)=>`<div class="pips ${cls}">${[1,2,3,4].map(k=>`<span class="pip ${k<=n?'on':''}"></span>`).join('')}</div>`;
+  $('#meter').innerHTML=`<span>隐私保护</span>${pips(L.privacy,'priv')}<span>AI 可用性</span>${pips(L.usable,'')}<span>还原</span><span>${noMap()?'<span style="color:var(--bad)">✗ 不可还原</span>':'<span style="color:var(--ok)">✓ 可完整还原</span>'}</span>`;
+  const byType={};cur.map.forEach(i=>{const b=byType[i.type] ||= {n:0,a:0};b.n++;if(active(i))b.a++;});
+  $('#riskList').innerHTML='<h4>本文件识别到的敏感信息</h4>'+Object.entries(byType).sort((a,b)=>PRI.indexOf(a[0])-PRI.indexOf(b[0])).map(([t,b])=>
+    `<div class="ri"><span class="dot" style="--c:${TYPES[t].color}"></span>${TYPES[t].label}<span class="cnt">× ${b.n}</span><span class="st ${b.a?'y':'n'}">${b.a?(b.a===b.n?'已处理':`已处理 ${b.a}/${b.n}`):'保留原样'}</span></div>`).join('');
+  const present=new Set(cur.ents.map(e=>e.type));
+  $('#typeRows').innerHTML=Object.entries(TYPES).filter(([k])=>present.has(k)).map(([k,t])=>`<div class="row"><label><span class="dot" style="--c:${t.color}"></span>${t.label}</label>
+    <select data-type="${k}">${OPTS(k).map(s=>`<option value="${s}" ${state.strategy[k]===s?'selected':''}>${STRAT[s]}</option>`).join('')}</select></div>`).join('');
+}
+function setLevel(n){state.level=n;state.custom=false;state.strategy={...LEVELS[n-1].s};replyCache=null;renderStep2();}
+$('#lvlCards').onclick=e=>{const b=e.target.closest('[data-l]');if(b)setLevel(+b.dataset.l);};
+$('#typeRows').onchange=e=>{const t=e.target.dataset.type;if(!t)return;state.strategy[t]=e.target.value;state.custom=true;replyCache=null;renderStep2();};
+$('#viewSeg').onclick=e=>{const b=e.target.closest('[data-v]');if(b){state.view=b.dataset.v;renderStep2();}};
+
+function renderStep2(){
+  process();renderLevel();
+  const{text,ents,map}=cur;
+  const changed=ents.filter(e=>active(map.get(e.key))).reduce((s,e)=>s+e.value.length,0);
+  const n=[...map.values()].filter(active).length;
+  $('#stats').innerHTML=`
+    <div class="stat"><b>${map.size}</b><small>识别出的敏感信息</small></div>
+    <div class="stat"><b>${n}</b><small>当前级别已处理</small></div>
+    <div class="stat ok"><b>100%</b><small>非敏感内容原样保留<br>改动仅占全文 ${(changed/Math.max(text.length,1)*100).toFixed(1)}%</small></div>
+    <div class="stat ${noMap()?'bad':'ok'}"><b>${noMap()?'✗':'✓'}</b><small>${noMap()?'不保留映射表<br>无法还原':'映射表本地保存<br>可完整还原'}</small></div>`;
+  $$('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===state.view));
+  const v=state.view, cmp=$('#cmp');
+  cmp.className='cmp'+(v==='both'?'':' single');
+  cmp.innerHTML=(v!=='out'?frame(segHtml('src'),{tag:'原文 · 仅本地'}):'')+(v!=='src'?frame(segHtml('out'),{out:true,tag:'脱敏版 · 可外发',safe:true}):'');
+  const types=[...new Set(ents.map(e=>e.type))].sort((a,b)=>PRI.indexOf(a)-PRI.indexOf(b));
+  $('#legend').innerHTML=types.map(t=>`<span><span class="dot" style="--c:${TYPES[t].color}"></span>${TYPES[t].label}</span>`).join('')+'<span style="margin-left:auto">虚线 = 识别到但当前级别不处理</span>';
+}
+$('#cmp').onclick=e=>{const el=e.target.closest('[data-key]');if(!el)return;const k=el.dataset.key;state.ignored.has(k)?state.ignored.delete(k):state.ignored.add(k);replyCache=null;renderStep2();};
+
+/* ================= 步骤 3：发送给 AI（模拟） ================= */
+const helpers=()=>({
+  text:cur.text,
+  V:(t,v)=>{const i=cur.map.get(t+'|'+v);return i&&active(i)?i.out:v;},
+  N:(t,v)=>{const i=cur.map.get(t+'|'+v);if(!i)return null;if(!active(i))return i.meta.num;return i.newNum??null;},
+  amt:(n,ref)=>{const m=cur.map.get('amount|'+ref).meta;return m.prefix+fmtNum(n,2,true)+m.unit;},
+  pct:x=>(x*100).toFixed(1)+'%',
+});
+const buildReply=()=>DOCS[state.doc].reply(helpers());
+function highlightTokens(s){
+  const toks=[...cur.map.values()].filter(active).sort((a,b)=>b.out.length-a.out.length);
+  if(!toks.length)return esc(s);
+  const re=new RegExp(toks.map(t=>reEsc(t.out)).join('|'),'g'), cm=Object.fromEntries(toks.map(t=>[t.out,TYPES[t.type].color]));
+  let h='',p=0,m;while((m=re.exec(s))){h+=esc(s.slice(p,m.index))+`<span class="rep" style="--c:${cm[m[0]]}">${esc(m[0])}</span>`;p=m.index+m[0].length;}
+  return h+esc(s.slice(p));
+}
+let replyCache=null,typer=null;
+function renderStep3(){
+  process();
+  const d=DOCS[state.doc], lv=state.custom?'自定义':`L${state.level} ${LEVELS[state.level-1].name}`;
+  $('#askBubble').innerHTML=`${esc(d.ask)}<div class="attach"><span class="ficon ${d.kind}">${d.ext}</span><div><b>${esc(d.name.replace(/(\.\w+)$/,'_脱敏$1'))}</b><small>已脱敏 · ${lv}</small></div></div>`;
+  $('#sentFrame').innerHTML=frame(segHtml('out'),{out:true,tag:'AI 收到的版本',safe:true});
+  const reply=buildReply();
+  clearInterval(typer);
+  if(replyCache===reply){$('#aiBubble').innerHTML=highlightTokens(reply);$('#toStep4').disabled=false;return;}
+  replyCache=reply;$('#toStep4').disabled=true;
+  let k=0;$('#aiBubble').innerHTML='<span class="caret"></span>';
+  typer=setInterval(()=>{k+=5;
+    if(k>=reply.length){clearInterval(typer);$('#aiBubble').innerHTML=highlightTokens(reply);$('#toStep4').disabled=false;return;}
+    $('#aiBubble').innerHTML=esc(reply.slice(0,k))+'<span class="caret"></span>';},20);
+}
+
+/* ================= 步骤 4：还原 ================= */
+function restore(str,calc){
+  const c=[],add=(re,rep,kind,pri)=>{re.lastIndex=0;let m;while((m=re.exec(str))){const r=typeof rep==='function'?rep(m):rep;if(r!==null)c.push({s:m.index,e:m.index+m[0].length,rep:r,from:m[0],kind,pri});}};
+  for(const i of cur.map.values()){
+    if(!i.reversible)continue;
+    if(i.strategy==='placeholder') // 容错：AI 可能把 [机构_1] 写成 【机构1】
+      add(new RegExp(`[\\[【]?\\s*${reEsc(TYPES[i.type].short)}\\s*[_\\-－]?\\s*${i.idx}(?!\\d)\\s*[\\]】]?`,'g'),i.value,'exact',0);
+    else add(new RegExp((/^[\d¥￥]/.test(i.out)?'(?<![\\d.,])':'')+reEsc(i.out),'g'),i.value,'exact',0);
+  }
+  if(calc&&!noMap()){
+    if(state.strategy.amount==='scale')
+      add(AMT_RE,m=>(!m[1]&&!m[3])?null:(m[1]||'')+fmtNum(toNum(m[2])/cur.F,decOf(m[2]),true)+(m[3]||''),'calc',1);
+    if(state.strategy.measure==='scale')
+      add(MEAS_RE,m=>fmtNum(toNum(m[1])/unitF(m[3]),decOf(m[1]),true)+m[2]+m[3],'calc',1);
+  }
+  c.sort((a,b)=>a.pri-b.pri||(b.e-b.s)-(a.e-a.s));
+  const t=[];for(const x of c)if(!t.some(y=>x.s<y.e&&y.s<x.e))t.push(x);
+  t.sort((a,b)=>a.s-b.s);
+  let h='',plain='',p=0,ne=0,nc=0;
+  for(const x of t){const g=str.slice(p,x.s);h+=esc(g);plain+=g+x.rep;
+    if(x.kind==='exact'){ne++;h+=`<span class="r-exact" title="${esc(x.from)} → ${esc(x.rep)}">${esc(x.rep)}</span>`;}
+    else{nc++;h+=`<span class="r-calc" title="AI 计算值 ${esc(x.from)}，已按缩放系数反算">${esc(x.rep)}</span>`;}
+    p=x.e;}
+  h+=esc(str.slice(p));plain+=str.slice(p);
+  return{h,plain,ne,nc};
+}
+function renderStep4(){
+  process();
+  const reply=buildReply(), r=restore(reply,true);
+  $('#restoredReply').innerHTML=noMap()?highlightTokens(reply):r.h;
+  const scaled=state.strategy.amount==='scale'||state.strategy.measure==='scale';
+  $('#replyNote').textContent=noMap()?'L4 不保留映射表，AI 回复中的占位与打码内容无法还原。'
+    :`按映射表换回 ${r.ne} 处，数值反算 ${r.nc} 处。`+(scaled?'等比缩放下，百分比和倍数本身就是真实值，无需还原。':'');
+  const d=restore(cur.plain,false), ok=d.plain===cur.text;
+  const bad=[...cur.map.values()].filter(i=>active(i)&&!i.reversible).length;
+  $('#verify').innerHTML=ok
+    ?`<div class="verify ok"><span class="big">✓</span><div><b>还原后与原文件逐字一致</b><small>共 ${cur.text.length} 字符，还原 ${d.ne} 处；版式、段落、表格结构完全保留</small></div></div>`
+    :`<div class="verify bad"><span class="big">✗</span><div><b>${noMap()?'L4 彻底脱敏：未保留映射表':'部分内容无法还原'}</b><small>${bad} 项为不可逆处理（打码、泛化或区间化），需要还原请回到第 2 步调低级别</small></div></div>`;
+  $('#restoredFrame').innerHTML=frame(d.h,{tag:ok?'已还原':'无法完整还原',safe:ok});
+  $('#mapTable').innerHTML=`<tr><th>类型</th><th>原文</th><th>脱敏后</th><th>识别方式</th><th>处理方式</th><th>可还原</th></tr>`+
+    [...cur.map.values()].map(i=>`<tr style="${active(i)?'':'opacity:.45'}"><td><span class="dot" style="--c:${TYPES[i.type].color}"></span> ${TYPES[i.type].label}</td>
+    <td class="mono">${esc(i.value)}</td><td class="mono">${active(i)?esc(i.out):'（未处理）'}</td><td>${TYPES[i.type].src}</td>
+    <td>${state.ignored.has(i.key)?'手动取消':STRAT[i.strategy]}</td><td>${!active(i)?'—':i.reversible?'✓':'✗'}</td></tr>`).join('');
+}
+$('#dlFile').onclick=()=>toast(`演示版：正式产品会生成与原文件格式一致的 ${DOCS[state.doc].ext} 文件`);
+
+/* ================= 步骤导航 ================= */
+const STEPS=[['选择文件','导入并解析'],['脱敏级别','选择级别 · 预览'],['发送给 AI','AI 只看到脱敏版'],['还原结果','回复与文件还原']];
+function go(n){
+  state.step=n;state.visited.add(n);
+  $('#stepper').innerHTML=STEPS.map((s,i)=>`<button class="step ${i+1===n?'on':state.visited.has(i+1)?'done':''}" data-go="${i+1}"><span class="n">${state.visited.has(i+1)&&i+1!==n?'✓':i+1}</span><span><b>${s[0]}</b><small>${s[1]}</small></span></button>`).join('');
+  $$('section.page').forEach(s=>s.classList.toggle('on',+s.dataset.step===n));
+  if(n!==3)clearInterval(typer);
+  if(n!==1)clearInterval(ocrTimer);
+  if(n!==1&&DOCS[state.doc].kind==='pdf')state.ocrDone.add(state.doc);
+  ({1:renderStep1,2:renderStep2,3:renderStep3,4:renderStep4})[n]();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b&&!b.disabled)go(+b.dataset.go);});
+$('#restart').onclick=()=>{state.visited=new Set([1]);state.doc=(state.doc+1)%DOCS.length;state.ignored.clear();$('#src').value=DOCS[state.doc].text;replyCache=null;go(1);};
+
+$('#src').value=DOCS[0].text;
+go(1);
+</script>
+</body>
+</html>
